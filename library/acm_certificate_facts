@@ -1,0 +1,66 @@
+#!/usr/bin/python
+
+DOCUMENTATION = '''
+---
+module: acm_certificate_facts
+short_description: Retrieve information about an ACM certificate
+description:
+  - Retrieve information about an ACM certificate
+author: Phil Hachey
+requirements:
+  - Requires the Boto module
+options:
+  domain_name:
+    description:
+      - The Domain Name to lookup
+    required: true
+    default: null
+    aliases: []
+extends_documentation_fragment: aws
+
+'''
+
+EXAMPLES = '''
+
+  - name: get acm certificate facts
+    acm_certificate_facts:
+        domain_name: "*.bluespurs.com"
+        region: "{{ region }}"
+'''
+
+try:
+    import boto3
+except ImportError:
+    print "failed=True msg='boto3 required for this module'"
+    exit(1)
+
+
+def main():
+    argument_spec = ec2_argument_spec()
+    argument_spec.update(
+        dict(
+            domain_name=dict(required=True),
+        )
+    )
+    module = AnsibleModule(
+        argument_spec=argument_spec,
+    )
+
+    domain_name = module.params['domain_name']
+    region = module.params['region']
+
+    client = boto3.client('acm')
+
+    response = client.list_certificates(
+        CertificateStatuses=['ISSUED']
+    )
+
+    if certificate['DomainName'] == domain_name:
+        for certificate in response['CertificateSummaryList']:
+            module.exit_json(**certificate)
+
+# import module snippets
+from ansible.module_utils.basic import *
+from ansible.module_utils.ec2 import *
+
+main()
