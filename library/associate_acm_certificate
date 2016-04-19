@@ -1,0 +1,50 @@
+#!/usr/bin/python
+
+try:
+    import boto3
+except ImportError:
+    print "failed=True msg='boto3 required for this module'"
+    exit(1)
+
+
+def main():
+    argument_spec = ec2_argument_spec()
+    argument_spec.update(
+        dict(
+            certificate_arn=dict(required=True),
+            distribution_id=dict(required=True)
+        )
+    )
+    module = AnsibleModule(
+        argument_spec=argument_spec,
+    )
+
+    distribution_id = module.params['distribution_id']
+    certificate_arn = module.params['certificate_arn']
+
+    cloudfront = boto3.client('cloudfront')
+
+    response = cloudfront.get_distribution_config(Id=distribution_id)
+    config = response['DistributionConfig']
+    etag = response['ETag']
+
+    config['ViewerCertificate'] = {
+        'Certificate': certificate_arn,
+        'CertificateSource': 'acm',
+        'MinimumProtocolVersion': 'TLSv1',
+        'SSLSupportMethod': 'sni-only'
+    }
+
+    cloudfront.update_distribution(
+        Id=distribution_id,
+        IfMatch=etag,
+        DistributionConfig=config,
+    )
+
+    module.exit_json()
+
+# import module snippets
+from ansible.module_utils.basic import *
+from ansible.module_utils.ec2 import *
+
+main()
