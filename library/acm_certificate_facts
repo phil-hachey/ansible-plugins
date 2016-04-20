@@ -58,6 +58,11 @@ def main():
     for certificate in response['CertificateSummaryList']:
         if certificate['DomainName'] == domain_name:
             module.exit_json(**certificate)
+            return
+
+    raise ValueError('Domain name {name} not found.'.format(
+        name=domain_name
+    ))
 
 # import module snippets
 from ansible.module_utils.basic import *
